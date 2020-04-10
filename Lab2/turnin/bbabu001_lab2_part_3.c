@@ -29,7 +29,7 @@ int main(void) {
 		}
 	}
 	tmpC = cntavail;
-	if (cntavail == 0x04) {
+	if (cntavail == 0x00) {
 		tmpC = (tmpC & 0x7F) | 0x80;
 	}
 	else {

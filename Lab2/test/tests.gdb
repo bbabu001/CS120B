@@ -30,49 +30,28 @@ echo Running all tests..."\n\n
 
 # Add tests below
 
-#all 0
-test "PINA: 0x00, PINB: 0x00, PINC: 0x00 => PORTD: 0x00"
+test "PINA: 0x00, PORTC: 0x04"
 setPINA 0x00
-setPINB 0x00
-setPINC 0x00
 continue 2
-expectPORTD 0x00
+expectPORTC 0x04
 checkResult
 
-#unbalanced
-test "PINA: 0x55, PINB: 0x0A, PINC: 0x01 => PORTD: 0xC2"
-setPINA 0x55
-setPINB 0x0A
-setPINC 0x01
+test "PINA: 0x0F, PORTC: 0x80"
+setPINA 0x0F
 continue 2
-expectPORTD 0xC2
+expectPORTC 0x80
 checkResult
 
-#unbalanced
-test "PINA: 0x01, PINB: 0x0A, PINC: 0x55 => PORTD: 0xC2" 
-setPINA 0x01
-setPINB 0x0A
-setPINC 0x55
+test "PINA: 0x02, PORTC: 3"
+setPINA 0x02
 continue 2
-expectPORTD 0xC2
+expectPORTC 3
 checkResult
 
-#balanced, overweight
-test "PINA: 0x41, PINB: 0x14, PINC: 0x3C => PORTD: 0x91"
-setPINA 0x41
-setPINB 0x14 
-setPINC 0x3C
+test "PINA: 0x0A, PORTC: 2"
+setPINA 0x0A
 continue 2
-expectPORTD 0x91
-checkResult
-
-#unbalanced, overweight
-test "PINA: 0x6E, PINB: 0x14, PINC: 0x3C => PORTD: 0xBF" 
-setPINA 0x6E
-setPINB 0x14
-setPINC 0x3C
-continue 2
-expectPORTD 0xBF
+expectPORTC 2
 checkResult
 
 
