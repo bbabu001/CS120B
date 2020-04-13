@@ -1,0 +1,11 @@
+Breakpoint 1 at 0x25c: file source/main.c, line 65.
+Note: automatically using hardware breakpoints for read-only addresses.
+======================================================
+Running all tests..."
+
+"PINA: 0x00, 0x01, 0x00 => PORTB: 2, state: OnRelease"...
+	Expected 0x02 
+	PORTB '0x800025:	0x01
+
+	Expected OnRelease but got state:1======================================================
+Quitting: Remote doesn't know how to detach
