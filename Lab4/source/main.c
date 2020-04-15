@@ -1,7 +1,7 @@
 /*	Author: bbabu001
  *  Partner(s) Name: 
  *	Lab Section: 027
- *	Assignment: Lab #4  Exercise #1
+ *	Assignment: Lab #4  Exercise #2
  *	Exercise Description: [optional - include for your own benefit]
  *
  *	I acknowledge all content contained herein, excluding template or example
@@ -12,35 +12,47 @@
 #include "simAVRHeader.h"
 #endif
 
-enum States {Start, OffRelease, OffPress, OnRelease, OnPress} state;
+enum States {Start, init, pressA0, pressA1, wait, bothPress} state;
 unsigned char a;
-unsigned char b;
+unsigned char c;
+unsigned char check;
 
 void Tick() {
 
 	switch(state) { // Transitions
 		case Start:
-			state = OffRelease;
+			state = init;
+		case init:
+			if (a == 0x01) {
+				state = pressA0;
+			}
+			else if (a == 0x02) {
+				state = pressA1;
+			}
+			else if (a == 0x03) {state = bothPress; }
+			else { state = init; }
 			break;
-		case OffRelease:
-			//state = a ? OffPress : OffRelease;
-			if (a == 0x01) { state = OffPress; }
-			else { state = OffRelease; }
+		case pressA0:
+			if (a == 0x00) { state = wait; }
+			else if (a == 0x03) { state = bothPress; }
+			else { state = pressA0; }
 			break;
-		case OffPress:
-			//state = a ? OffPress : OnRelease;
-			if (a == 0x01) { state = OffPress; }
-			else { state = OnRelease; }
+		case pressA1:
+			if (a == 0x00) { state = wait; }
+			else if (a == 0x03) { state = bothPress; }
+			else { state = pressA1; }
 			break;
-		case OnRelease:
-			//state = a ? OnPress : OnRelease;
-			if (a == 0x01) { state = OnPress; }
-			else { state = OnRelease; }
+		case wait:
+			if (a == 0x01) {
+                                state = pressA0;
+                        }                                                                                                                       else if (a == 0x02) {
+                                state = pressA1;
+			}                                                                                                                       else if (a == 0x03) {state = bothPress; }
+                        else { state = wait; }
 			break;
-		case OnPress:
-			//state = a ? OnPress : OffRelease;
-			if (a == 0x01) { state = OnPress; }
-			else { state = OffRelease; }
+		case bothPress:
+			if (a == 0x03) { state = bothPress; }
+			else { state = wait; }
 			break;
 		default:
 			state = Start;
@@ -49,37 +61,48 @@ void Tick() {
 	
 	switch(state) {	// State Actions
 		case Start:
-			b = 0x00;
+			c = 0x07;
+			check = 0;
 			break;
-		case OffRelease:
-			b = 0x01;
+		case init:
+			c = 0x07;
+			check = 0;
 			break;
-		case OffPress:
-			b = 0x02;
+		case pressA0:
+			if (c < 9 && check == 0) {
+				c++;
+				check = 1;
+			}
 			break;
-		case OnRelease:
-			b = 0x02;
+		case pressA1:
+			if (c >= 1 && check == 0) {
+				c--;
+				check = 1;
+			}
 			break;
-		case OnPress:
-			b = 0x01;
+		case wait:
+			check = 0;
+			break;
+		case bothPress:
+			c = 0x00;
+			check = 0;
 			break;		
 		default:
-			b = 0x01;
 			break;	
 	}
 }
 
 int main(void) {
 	DDRA = 0x00; PORTA = 0xFF;
-	DDRB = 0xFF; PORTB = 0x00;
+	DDRC = 0xFF; PORTC = 0x00;
 	
-	b = 0x00;
-	state = Start;
-
+	c = 0x07;
+	state = init;
+	check = 0;
     while (1) {
 	a = PINA;
 	Tick();
-	PORTB = b;
+	PORTC = c;
     }
     return 0;
 }

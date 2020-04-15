@@ -29,16 +29,34 @@ echo Running all tests..."\n\n
 
 # Add tests below
 
-test "PINA: 0x00, 0x01, 0x00 => PORTB: 2, state: OnRelease"
-set state = OffRelease
+test "PINA: 0x01, 0x00 => PORTC: 8, state: wait"
+set state = init
 setPINA 0x01
 continue 2
 setPINA 0x00
 continue 2
+expectPORTC 0x08
+expect state wait
+checkResult
+
+test "PINA: 0x03, 0x00 => PORTC: 0, state: wait"
+set state = init
+setPINA 0x03
+continue 2
 setPINA 0x00
 continue 2
-expectPORTB 0x02
-expect state OnRelease
+expectPORTC 0x00
+expect state wait
+checkResult
+
+test "PINA: 0x02, 0x00 => PORTC: 6, state: wait"
+set state = init
+setPINA 0x02
+continue 4
+setPINA 0x00
+continue 2
+expectPORTC 0x06
+expect state wait
 checkResult
 
 # Report on how many tests passed/tests ran
