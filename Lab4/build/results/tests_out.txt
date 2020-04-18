@@ -1,7 +1,8 @@
-Breakpoint 1 at 0x2da: file source/main.c, line 102.
+Breakpoint 1 at 0x35c: file source/main.c, line 130.
 Note: automatically using hardware breakpoints for read-only addresses.
 ======================================================
 Running all tests..."
 
-"PINA: 0x04, 0x00, 0x02 => B: 0x01, state: open"...======================================================
+"PINA: 0x04, 0x00, 0x02 => B: 0x01, state: open"...
+	Expected open but got state:3"PINA: 0x08, 0x04, 0x00, 0x02 => B: 0x00, state: init"...======================================================
 Remote doesn't know how to detach
