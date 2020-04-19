@@ -1,8 +1,11 @@
-Breakpoint 1 at 0x35c: file source/main.c, line 130.
+Breakpoint 1 at 0x3e4: file source/main.c, line 151.
 Note: automatically using hardware breakpoints for read-only addresses.
 ======================================================
 Running all tests..."
 
-"PINA: 0x04, 0x00, 0x02 => B: 0x01, state: open"...
-	Expected open but got state:3"PINA: 0x08, 0x04, 0x00, 0x02 => B: 0x00, state: init"...======================================================
+"PINA: sequence => B: 0x01, state: wait2"...
+	Expected 0x01 
+	PORTB '0x800025:	0x00
+
+	Expected wait2 but got state:1"PINA: sequence => B: 0x01, state: init"...======================================================
 Remote doesn't know how to detach
