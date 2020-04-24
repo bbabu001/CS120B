@@ -1,7 +1,7 @@
 /*	Author: bbabu001
  *  Partner(s) Name: 
- *	Lab Section: 027
- *	Assignment: Lab #4  Exercise #2
+ *	Lab Section:027
+ *	Assignment: Lab #5  Exercise #3
  *	Exercise Description: [optional - include for your own benefit]
  *
  *	I acknowledge all content contained herein, excluding template or example
@@ -12,101 +12,108 @@
 #include "simAVRHeader.h"
 #endif
 
-enum States {Start, init, pressA0, pressA1, wait, bothPress} state;
-unsigned char a;
-unsigned char c;
-unsigned char check;
+enum States {Start, init, s1, s2, s3, s4} state;
+unsigned char tmpA;
+unsigned char tmpB;
+unsigned char press;
 
 void Tick() {
-
-	switch(state) { // Transitions
+	switch(state) {// Transitions
 		case Start:
 			state = init;
+			break;
 		case init:
-			if (a == 0x01) {
-				state = pressA0;
+			if (tmpA == 0x01 && press == 1) {
+				state = s1;
+				press = 0;
+				tmpB = 0x21;
 			}
-			else if (a == 0x02) {
-				state = pressA1;
+			else {
+				state = init;
+				tmpB = 0x00;
 			}
-			else if (a == 0x03) {state = bothPress; }
-			else { state = init; }
+			if (tmpA == 0x00) {
+				press = 1;
+			}
 			break;
-		case pressA0:
-			if (a == 0x00) { state = wait; }
-			else if (a == 0x03) { state = bothPress; }
-			else { state = pressA0; }
+		case s1:
+			if (tmpA == 0x01 && press == 1) {
+				state = s2;
+				press = 0;
+				tmpB = 0x12;
+			}
+			else {
+				state = s1;
+				tmpB = 0x21;
+			}
+			if (tmpA == 0x00) {
+				press = 1;
+			}
 			break;
-		case pressA1:
-			if (a == 0x00) { state = wait; }
-			else if (a == 0x03) { state = bothPress; }
-			else { state = pressA1; }
-			break;
-		case wait:
-			if (a == 0x01) {
-                                state = pressA0;
+		case s2:
+			if (tmpA == 0x01 && press == 1) {
+                                state = s3;
+                                press = 0;
+				tmpB = 0x0C;
                         }
-			else if (a == 0x02) {
-                                state = pressA1;
-			}
-			else if (a == 0x03) {state = bothPress; }
-                        else { state = wait; }
-			break;
-		case bothPress:
-			if (a == 0x03) { state = bothPress; }
-			else { state = wait; }
-			break;
+                        else {
+                                state = s2;
+				tmpB = 0x12;
+                        }
+                        if (tmpA == 0x00) {
+                                press = 1;
+                        }
+                        break;
+		case s3:
+			if (tmpA == 0x01 && press == 1) {
+                                state = s4;
+                                press = 0;
+				tmpB = 0x3F;
+                        }
+                        else {
+                                state = s3;
+				tmpB = 0x0C;
+                        }
+                        if (tmpA == 0x00) {
+                                press = 1;
+                        }
+                        break;
+		case s4:
+			if (tmpA == 0x01 && press == 1) {
+                                state = init;
+                                press = 0;
+				tmpB = 0x00;
+                        }
+                        else {
+                                state = s4;
+				tmpB = 0x3F;
+                        }
+                        if (tmpA == 0x00) {
+                                press = 1;
+                        }
+                        break;
 		default:
-			state = Start;
+			state = init;
+			press = 0;
+			tmpB = 0x00;
 			break;
-	}
-	
-	switch(state) {	// State Actions
-		case Start:
-			c = 0x07;
-			check = 0;
-			break;
-		case init:
-			c = 0x07;
-			check = 0;
-			break;
-		case pressA0:
-			if (c < 9 && check == 0) {
-				c++;
-				check = 1;
-			}
-			break;
-		case pressA1:
-			if (c >= 1 && check == 0) {
-				c--;
-				check = 1;
-			}
-			break;
-		case wait:
-			check = 0;
-			break;
-		case bothPress:
-			c = 0x00;
-			check = 0;
-			break;		
-		default:
-			c = 0x07;
-			check = 0;
-			break;	
+
 	}
 }
 
 int main(void) {
 	DDRA = 0x00; PORTA = 0xFF;
-	DDRC = 0xFF; PORTC = 0x00;
-
-	c = 0x07;
+	DDRB = 0xFF; PORTB = 0x00;
+	
+	tmpA = 0x00;
+	tmpB = 0x00;
+	press = 0;
 	state = init;
-	check = 0;
+
     while (1) {
-	a = ~PINA & 0x03;
+	tmpA = (~PINA & 0x01);
 	Tick();
-	PORTC = c;
+	PORTB = tmpB;
     }
     return 0;
 }

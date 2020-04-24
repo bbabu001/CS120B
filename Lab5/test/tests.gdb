@@ -1,4 +1,4 @@
-# Test file for "Lab4"
+# Test file for "Lab3"
 
 
 # commands.gdb provides the following functions for ease:
@@ -26,43 +26,21 @@
 echo ======================================================\n
 echo Running all tests..."\n\n
 
-
 # Add tests below
 
-test "PINA: 0x01, 0x00 => PORTC: 8, state: wait"
+test "PINA: 0x01, 0x00, 0x01, 0x00 => PORTB: 0x12"
 set state = init
-setPINA 0xFE
+setPINA 0x01
 continue 2
-setPINA 0xFF
+setPINA 0x00
 continue 2
-expectPORTC 0x08
-expect state wait
+setPINA 0x01
+continue 2
+setPINA 0x00
+continue 2
+expectPORTB 0x12
+expect state s2
 checkResult
-
-test "PINA: 0x02, 0x00, 0x02, 0x00 => PORTC: 6, state: wait"
-set state = init
-setPINA 0xFD
-continue 2
-setPINA 0xFF
-continue 2
-setPINA 0xFD
-continue 2
-setPINA 0xFF
-continue 2
-expectPORTC 0x06
-expect state wait
-checkResult
-
-test "PINA: 0x03, 0x00 => PORTC: 0, state: wait"
-set state = init
-setPINA 0xFC
-continue 2
-setPINA 0xFF
-continue 2
-expectPORTC 0x00
-expect state wait
-checkResult
-
 
 # Report on how many tests passed/tests ran
 set $passed=$tests-$failed
