@@ -1,6 +1,6 @@
 # University of California, Riverside
 # CS120B Makefile
-MMCU=atmega1284p
+MMCU=atmega1284
 FREQ=8000000
 
 PATHB=build/
