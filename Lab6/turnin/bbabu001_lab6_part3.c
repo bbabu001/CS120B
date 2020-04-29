@@ -121,10 +121,10 @@ void Tick() {
 	
 	switch(state) {	// State Actions
 		case Start:
-			b = 0x00;
+			b = 0x07;
 			break;
 		case init:
-			b = 0x00;
+			b = 0x07;
 			t = 0;
 			break;
 		case pressA0:
@@ -149,7 +149,7 @@ void Tick() {
 			t = 0;
 			break;		
 		default:
-			b = 0x00;
+			b = 0x07;
 			t = 0;
 			break;	
 	}
@@ -160,7 +160,7 @@ int main(void) {
 	DDRB = 0xFF; PORTB = 0x00;
 	TimerSet(100);
 	TimerOn();
-	b = 0x00;
+	b = 0x07;
 	state = init;
     while (1) {
 	a = ~PINA & 0x03;

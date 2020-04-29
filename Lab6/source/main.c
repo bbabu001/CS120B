@@ -1,22 +1,23 @@
-/*	Author: bbabu001
+/*	Author: brandon babu
  *  Partner(s) Name: 
- *	Lab Section: 027
- *	Assignment: Lab #6  Exercise #3
+ *	Lab Section: 27
+ *	Assignment: Lab #6  Exercise #2
  *	Exercise Description: [optional - include for your own benefit]
  *
  *	I acknowledge all content contained herein, excluding template or example
  *	code, is my own original work.
  */
+
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #ifdef _SIMULATE_
 #include "simAVRHeader.h"
 #endif
-
-enum States {Start, init, pressA0, pressA1, wait, bothPress} state;
-unsigned char a;
+enum States {Start, s1, s2, s3, hold1, hold2} state;
 unsigned char b;
-unsigned char t;
+unsigned char a;
+unsigned char dir;
+unsigned char press;
 
 volatile unsigned char TimerFlag = 0; //TimerISR() sets this to 1. C programmer should clear to 0
 
@@ -71,103 +72,118 @@ void TimerSet(unsigned long M){
 
 }
 
-void Tick() {
-
-	switch(state) { // Transitions
+void TickSM() {
+	switch(state) {
 		case Start:
-			state = init;
-		case init:
+			state = s1;
+			break;
+		case s1:
 			if (a == 0x01) {
-				state = pressA0;
-				if (b < 9) { b++; }
+				state = hold1;
+				press = 1;
 			}
-			else if (a == 0x02) {
-				state = pressA1;
-				if (b > 0) { b--; }
+			else {
+				state = s2;
 			}
-			else if (a == 0x03) {state = bothPress; }
-			else { state = init; }
 			break;
-		case pressA0:
-			if (a == 0x00) { state = wait; }
-			else if (a == 0x03) { state = bothPress; }
-			else { state = pressA0; }
-			break;
-		case pressA1:
-			if (a == 0x00) { state = wait; }
-			else if (a == 0x03) { state = bothPress; }
-			else { state = pressA1; }
-			break;
-		case wait:
+		case s2:
 			if (a == 0x01) {
-                                state = pressA0;
-				if (b < 9) { b++; }
-                        }
-			else if (a == 0x02) {
-                                state = pressA1;
-				if (b > 0) { b--; }
+				state = hold1;
+				press = 1;
 			}
-			else if (a == 0x03) {state = bothPress; }
-                        else { state = wait; }
+			else {
+				if (dir == 1) {
+					state = s3;
+				}
+				else {
+					state = s1;
+				}
+			}
 			break;
-		case bothPress:
-			if (a == 0x03) { state = bothPress; }
-			else { state = wait; }
+		case s3:
+			if (a == 0x01) {
+				state = hold1;
+				press = 1;
+			}
+			else {
+				state = s2;
+			}
+			break;
+		case hold1:
+			if (a == 0x00 && press == 1) {
+				state = hold2;
+			}
+			else if (a == 0x00 && press == 0) {
+				if (b == 0x01) {
+					state = s2;
+					dir = 1;
+				}
+				else if (b == 0x02) {
+					state = s2;
+					//if (dir == 1) {
+					//	state = s3;
+					//}
+					//else {
+					//	state = s1;
+					//}
+				}
+				else if (b == 0x04) {
+					state = s2;
+					dir = 1;
+				}
+			}
+			break;
+		case hold2:
+			if (a == 0x01) {
+				state = hold1;
+				press = 0;
+			}
 			break;
 		default:
-			state = Start;
+			state = s1;
 			break;
 	}
-	
-	switch(state) {	// State Actions
+	switch(state) {
 		case Start:
-			b = 0x00;
+			b = 0x01;
+			dir = 0;
 			break;
-		case init:
-			b = 0x00;
-			t = 0;
+		case s1:
+			b = 0x01;
+			dir = 1;
 			break;
-		case pressA0:
-			if (b < 9 && t == 10) {
-				b++;
-				t = 0;
-			}
-			t++;
+		case s2:
+			b = 0x02;
 			break;
-		case pressA1:
-			if (b >= 1 && t == 10) {
-				b--;
-				t = 0;
-			}
-			t++;
+		case s3:
+			b = 0x04;
+			dir = 0;
 			break;
-		case wait:
-			t = 0;
+		case hold1:
 			break;
-		case bothPress:
-			b = 0x00;
-			t = 0;
-			break;		
+		case hold2:
+			break;
 		default:
-			b = 0x00;
-			t = 0;
-			break;	
+			b = 0x01;
+			break;
 	}
 }
 
-int main(void) {
+int main() {
 	DDRA = 0x00; PORTA = 0xFF;
 	DDRB = 0xFF; PORTB = 0x00;
-	TimerSet(100);
+	TimerSet(300);
 	TimerOn();
 	b = 0x00;
-	state = init;
-    while (1) {
-	a = ~PINA & 0x03;
-	Tick();
-	while(!TimerFlag); //Wait 1 sec
-	TimerFlag = 0;
-	PORTB = b;
-    }
-    return 0;
+	a = 0x00;
+	state = Start;
+
+	while(1){
+		a = ~PINA & 0x01;
+		TickSM();
+		while(!TimerFlag); //Wait 1 sec
+		TimerFlag = 0;
+		PORTB = b;
+	}
+	return 0;
 }

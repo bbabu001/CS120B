@@ -1,7 +1,7 @@
 /*	Author: brandon babu
  *  Partner(s) Name: 
  *	Lab Section: 27
- *	Assignment: Lab #6  Exercise #1
+ *	Assignment: Lab #6  Exercise #2
  *	Exercise Description: [optional - include for your own benefit]
  *
  *	I acknowledge all content contained herein, excluding template or example
@@ -16,7 +16,8 @@
 enum States {Start, s1, s2, s3, hold1, hold2} state;
 unsigned char b;
 unsigned char a;
-unsigned char tmp;
+unsigned char dir;
+unsigned char press;
 
 volatile unsigned char TimerFlag = 0; //TimerISR() sets this to 1. C programmer should clear to 0
 
@@ -79,6 +80,7 @@ void TickSM() {
 		case s1:
 			if (a == 0x01) {
 				state = hold1;
+				press = 1;
 			}
 			else {
 				state = s2;
@@ -87,43 +89,54 @@ void TickSM() {
 		case s2:
 			if (a == 0x01) {
 				state = hold1;
+				press = 1;
 			}
 			else {
-				state = s3;
+				if (dir == 1) {
+					state = s3;
+				}
+				else {
+					state = s1;
+				}
 			}
 			break;
 		case s3:
 			if (a == 0x01) {
 				state = hold1;
+				press = 1;
 			}
 			else {
-				state = s1;
+				state = s2;
 			}
 			break;
 		case hold1:
-			if (a == 0x01) {
-				state = hold1;
-			}
-			else {
+			if (a == 0x00 && press == 1) {
 				state = hold2;
+			}
+			else if (a == 0x00 && press == 0) {
+				if (b == 0x01) {
+					state = s2;
+					dir = 1;
+				}
+				else if (b == 0x02) {
+					state = s2;
+					//if (dir == 1) {
+					//	state = s3;
+					//}
+					//else {
+					//	state = s1;
+					//}
+				}
+				else if (b == 0x04) {
+					state = s2;
+					dir = 1;
+				}
 			}
 			break;
 		case hold2:
 			if (a == 0x01) {
-				switch(tmp) {
-					case 0x01:
-						state = s2;
-						break;
-					case 0x02:
-						state = s3;
-						break;
-					case 0x04:
-						state = s1;
-						break;
-				}
-			}
-			else {
 				state = hold1;
+				press = 0;
 			}
 			break;
 		default:
@@ -132,26 +145,26 @@ void TickSM() {
 	}
 	switch(state) {
 		case Start:
+			b = 0x01;
+			dir = 0;
 			break;
 		case s1:
 			b = 0x01;
-			tmp = b;
+			dir = 1;
 			break;
 		case s2:
 			b = 0x02;
-			tmp = b;
 			break;
 		case s3:
 			b = 0x04;
-			tmp = b;
+			dir = 0;
 			break;
 		case hold1:
-			b = tmp;
 			break;
 		case hold2:
-			b = tmp;
 			break;
 		default:
+			b = 0x01;
 			break;
 	}
 }
@@ -163,7 +176,6 @@ int main() {
 	TimerOn();
 	b = 0x00;
 	a = 0x00;
-	tmp = 0x00;
 	state = Start;
 
 	while(1){
