@@ -78,65 +78,55 @@ void TickSM() {
 			state = s1;
 			break;
 		case s1:
-			if (a == 0x01) {
+			if (a == 0x01 && press == 0) {
 				state = hold1;
-				press = 1;
 			}
 			else {
+				if (a == 0x00) {
+					press = 0;
+				}
 				state = s2;
 			}
 			break;
 		case s2:
-			if (a == 0x01) {
+			if (a == 0x01 && press == 0) {
 				state = hold1;
-				press = 1;
 			}
 			else {
 				if (dir == 1) {
+					if (a == 0x00) {
+						press = 0;
+					}
 					state = s3;
 				}
 				else {
+					if (a == 0x00) {
+						press = 0;
+					}
 					state = s1;
 				}
 			}
 			break;
 		case s3:
-			if (a == 0x01) {
+			if (a == 0x01 && press == 0) {
 				state = hold1;
-				press = 1;
 			}
 			else {
+				if (a == 0x00) {
+					press = 0;
+				}
 				state = s2;
 			}
 			break;
 		case hold1:
-			if (a == 0x00 && press == 1) {
+			if (a == 0x00) {
 				state = hold2;
-			}
-			else if (a == 0x00 && press == 0) {
-				if (b == 0x01) {
-					state = s2;
-					dir = 1;
-				}
-				else if (b == 0x02) {
-					state = s2;
-					//if (dir == 1) {
-					//	state = s3;
-					//}
-					//else {
-					//	state = s1;
-					//}
-				}
-				else if (b == 0x04) {
-					state = s2;
-					dir = 1;
-				}
 			}
 			break;
 		case hold2:
 			if (a == 0x01) {
-				state = hold1;
-				press = 0;
+				state = s1;
+				press = 1;
 			}
 			break;
 		default:
