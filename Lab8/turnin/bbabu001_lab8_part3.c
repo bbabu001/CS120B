@@ -1,7 +1,7 @@
 /*	Author: brandon babu
  *  Partner(s) Name: 
  *	Lab Section: 027
- *	Assignment: Lab #8  Exercise #4
+ *	Assignment: Lab #8  Exercise #3
  *	Exercise Description: [optional - include for your own benefit]
  *
  *	I acknowledge all content contained herein, excluding template or example
@@ -23,33 +23,15 @@ int main(void) {
 
     ADC_init();
     unsigned short s = ADC;
-    unsigned char c = 0;
+    unsigned char c, d;
     unsigned short max = 0x02FF;
     while (1) {
 	    s = ADC;
-	    if (s > max/8 && s < max/4) {
-		    c = 0x03;
-	    }
-	    else if (s > max/4 && s < max*3/8) {
-		    c = 0x07;
-	    }
-	    else if (s > max*3/8 && s < max/2) {
-		    c = 0x0F;
-	    }
-	    else if (s > max/2 && s < max*5/8) {
-		    c = 0x1F;
-	    }
-	    else if (s > max*5/8 && s < max*3/4) {
-		    c = 0x3F;
-	    }
-	    else if (s > max*3/4 && s < max*7/8) {
-		    c = 0x7F;
-	    }
-	    else if (s > max*7/8) {
-		    c = 0xFF;
+	    if (s >= max/2) {
+		    c = 0x01;
 	    }
 	    else {
-		    c = 0x01;
+		    c = 0x00;
 	    }
 	    //c = (char)s;
 	    //d = (char) ((s >> 4) & 0x0F);
