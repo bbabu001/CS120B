@@ -94,19 +94,138 @@ void PWM_off() {
 	TCCR3B = 0x00;
 }
 
-unsigned char a;
+unsigned char a, i, check;
 double note[8] = {261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25};
 
 
+enum scale_states{Start, init, up, down} scale_state;
+
+void Scale_Tick() {
+	switch(scale_state) { //state transitions
+		case Start:
+			scale_state = init;
+			break;
+		case init:
+			if (a == 0x02) {
+				scale_state = up;
+			}
+			else if (a == 0x04) {
+				scale_state = down;
+			}
+			else {
+				scale_state = init;
+			}
+			break;
+		case up:
+			if (a == 0x02) {
+				scale_state = up;
+			}
+			else {
+				scale_state = init;
+			}
+			break;
+		case down:
+			if (a == 0x04) {
+				scale_state = down;
+			}
+			else {
+				scale_state = init;
+			}
+			break;
+		default:
+			scale_state = init;
+			break;
+	}
+	switch (scale_state) { // state actions
+		case Start:
+			break;
+		case init:
+			check = 0;
+			set_PWM(note[0]);
+			break;
+		case up:
+			if (check == 0 && i < 7) {
+				i++;
+				check = 1;
+			}
+			set_PWM(note[i]);
+			break;
+		case down:
+			if (check == 0 && i > 0) {
+				i--;
+				check = 1;
+			}
+			set_PWM(note[i]);
+			break;
+		default:
+			break;
+	}
+}
+
+enum sound_states{off, on, wait}sound_state;
+void Sound_Tick() {
+	switch(sound_state) { // state transitions
+		case off:
+			if (a == 0x01) {
+				sound_state = on;
+			}
+			else if (a == 0x00) {
+				sound_state = off;
+			}
+			break;
+		case on:
+			if (a == 0x00) {
+				sound_state = wait;
+			}
+			else if (a == 0x01) {
+				sound_state = on;
+			}
+			break;
+		case wait:
+			if (a == 0x00) {
+				sound_state = wait;
+			}
+			else if (a == 0x01) {
+				sound_state = off;
+			}
+			break;
+		default:
+			sound_state = off;
+			break;
+	}
+	switch(sound_state) { // state transitions
+		case off:
+			PWM_off();
+			break;
+		case on:
+			PWM_on();
+			set_PWM(note[i]);
+			break;
+		case wait:
+			PWM_on();
+			set_PWM(note[i]);
+			break;
+		default:
+			PWM_off();
+			break;
+	}
+}
 
 int main(void) {
     DDRB = 0xFF; PORTB = 0x00;
     DDRA = 0x00; PORTA = 0xFF;
 
+    a = 0;
+    i = 0;
+    check = 0;
+    scale_state = Start;
+    sound_state = off;
     TimerSet(50);
     TimerOn();
     while (1) {
-	    a = ~PINA & 0x01;
+	    a = ~PINA & 0x07;
+	    Scale_Tick();
+	    Sound_Tick();
 
 	    while(!TimerFlag);
 	    TimerFlag = 0;

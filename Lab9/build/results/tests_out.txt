@@ -1,0 +1,7 @@
+Breakpoint 1 at 0x42c: file source/main.c, line 167.
+Note: automatically using hardware breakpoints for read-only addresses.
+A syntax error in expression, near `0xFE'.
+Continuing.
+Continuing.
+0 '\000'Detaching from program: /home/lab/CS120B/Lab9/build/objects/main.elf, Remote target
+Remote doesn't know how to detach
