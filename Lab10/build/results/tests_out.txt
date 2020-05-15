@@ -1,0 +1,4 @@
+Breakpoint 1 at 0x47e: file source/main.c, line 231.
+Note: automatically using hardware breakpoints for read-only addresses.
+Detaching from program: /home/lab/CS120B/Lab10/build/objects/main.elf, Remote target
+Remote doesn't know how to detach
