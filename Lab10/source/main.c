@@ -69,6 +69,7 @@ void TimerSet(unsigned long M){
 unsigned char threeLEDs;
 unsigned char blinkingLED;
 unsigned char s, a, t;
+unsigned char freq = 0;
 
 enum ThreeStates{Start, zero, one, two}ThreeState;
 void ThreeLEDTick() {
@@ -143,7 +144,7 @@ void CombineLEDTick() {
 	}
 	switch(CombineState) {
 		case out:
-			PORTB = threeLEDs | blinkingLED;
+			PORTB = threeLEDs | blinkingLED | s;
 			break;
 		default:
 			break;
@@ -156,33 +157,32 @@ void SpeakerTick() {
 		case init:
 			if (a == 0x04) {
 				SpeakerState = up;
-				t = 0;
 			}
 			else {
 				SpeakerState = init;
 			}
 			break;
 		case up:
-			if (a == 0x04 && t < 2) {
-				SpeakerState = up;
-				t++;
-			}
-			else if (a == 0x04 && t >= 2) {
+			if (a == 0x04 && t == freq) {
 				SpeakerState = down;
 				t = 0;
+			}
+			else if (a == 0x04 && t != freq) {
+				SpeakerState = up;
+				t++;
 			}
 			else {
 				SpeakerState = init;
 			}
 			break;
 		case down:
-			if (a == 0x04 && t< 2) {
-				SpeakerState = down;
-				t++;
-			}
-			else if (a == 0x04 && t >= 2) {
+			if (a == 0x04 && t == freq) {
 				SpeakerState = up;
 				t = 0;
+			}
+			else if (a == 0x04 && t != freq) {
+				SpeakerState = down;
+				t++;
 			}
 			else {
 				SpeakerState = init;
@@ -207,11 +207,27 @@ void SpeakerTick() {
 	}
 }
 
+enum FreqStates{adjust}FreqState;
+void FreqTick() {
+	switch(FreqState) {
+		case adjust:
+			if ((a == 0x01 || a == 0x05) && freq < 3) {
+				freq++;
+			}
+			else if ((a == 0x02 || a == 0x06) && freq > 0) {
+				freq--;
+			}
+			FreqState = adjust;
+	}
+}
+
 int main(void) {
+	DDRA = 0x00; PORTA = 0xFF;
 	DDRB = 0xFF; PORTB = 0x00;
 
 	unsigned long Th_elapsedTime = 0;
 	unsigned long Bl_elapsedTime = 0;
+	unsigned long SP_elapsedTime = 0;
 	const unsigned long timerPeriod = 1;
 
 	TimerSet(1);
@@ -239,14 +255,19 @@ int main(void) {
 		    BlinkLEDTick();
 		    Bl_elapsedTime = 0;
 	    }
+	    if (SP_elapsedTime >= 2) {
+		    SpeakerTick();
+		    SP_elapsedTime = 0;
+	    }
+	    
 	    CombineLEDTick();
-	    SpeakerTick();
 
 	    while (!TimerFlag);
 	    TimerFlag = 0;
 
 	    Th_elapsedTime += timerPeriod;
 	    Bl_elapsedTime += timerPeriod;
+	    SP_elapsedTime += timerPeriod;
     }
     return 1;
 }
