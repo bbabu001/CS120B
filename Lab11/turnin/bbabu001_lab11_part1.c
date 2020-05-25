@@ -10,7 +10,7 @@
 #include <avr/io.h>
 #ifdef _SIMULATE_
 #include "simAVRHeader.h"
-#include <io.h>
+#include <io.c>
 #include <keypad.h>
 //#include <lcd_8bit_task.h>
 //#include <queue.h>
@@ -42,12 +42,84 @@ typedef struct task{
 // end task data structure
 
 // shared variables
+unsigned char led0_output = 0x00;
+unsigned char led1_output = 0x00;
+unsigned char pause = 0;
 unsigned char i;
-unsigned char cnt = 0;
-unsigned char pos = 0;
+
 unsigned char x = 0;
 unsigned char keyout = 0;
 // end shared variables
+
+enum pasueButtonSM_States {pauseButton_wait, pauseButton_press, pauseButton_release};
+int pauseButtonSMTick(int state) {
+	unsigned char press = ~PINA & 0x01;
+	switch(state) {
+		case pauseButton_wait:
+			state = press == 0x01? pauseButton_press: pauseButton_wait; break;
+		case pauseButton_press:
+			state = pauseButton_release; break;
+		case pauseButton_release:
+			state = press == 0x00? pauseButton_wait: pauseButton_press; break;
+		default: state = pauseButton_wait; break;
+	}
+	switch(state) {
+		case pauseButton_wait: break;
+		case pauseButton_press: 
+			pause = (pause == 0) ? 1 : 0;
+			break;
+		case pauseButton_release: break;
+	}
+	return state;
+}
+
+enum toggleLED0_States {toggleLED0_wait, toggleLED0_blink};
+int toggleLED0SMTick(int state) {
+	switch(state) {
+		case toggleLED0_wait: state = !pause? toggleLED0_blink: toggleLED0_wait; break;
+		case toggleLED0_blink: state = pause? toggleLED0_wait: toggleLED0_blink; break;
+		default: state = toggleLED0_wait; break;
+	}
+	switch(state) {
+		case toggleLED0_wait: break;
+		case toggleLED0_blink: 
+			led0_output = (led0_output == 0x00) ? 0x01 : 0x00;
+			break;
+	}
+	return state;
+}
+
+enum toggleLED1_States {toggleLED1_wait, toggleLED1_blink};
+int toggleLED1SMTick(int state) {
+	switch(state) {
+		case toggleLED1_wait: state = !pause? toggleLED1_blink: toggleLED1_wait; break;
+		case toggleLED1_blink: state = pause? toggleLED1_wait: toggleLED1_blink; break;
+		default: state = toggleLED1_wait; break;
+	}
+	switch(state) {
+		case toggleLED1_wait: break;
+		case toggleLED1_blink: 
+			led1_output = (led1_output == 0x00) ? 0x01 : 0x00;
+			break;
+	}
+	return state;
+}
+
+enum display_States {display_display};
+int displaySMTick(int state) {
+	unsigned char output;
+	switch(state) {
+		case display_display: state = display_display; break;
+		default: state = display_display; break;
+	}
+	switch(state) {
+		case display_display: 
+			output = led0_output | led1_output << 1;
+			break;
+	}
+	PORTB = output;
+	return state;
+}
 
 enum keypad_states {keypad};
 int keypadSMTick(int state) {
@@ -85,35 +157,6 @@ int keypadSMTick(int state) {
 	}
 	return state;
 }
-
-enum lcd_states {display};
-int lcdSMTick(int state) {
-	unsigned char msg[40] = {' ', ' ', ' ', 'C', 'S', '1', '2', '0', 'B', ' ', 'i', 's', ' ', 'L', 'e', 'g', 'e', 'n', 'd', '.', '.', '.', ' ', 'w', 'a', 'i', 't', ' ', 'f', 'o', 'r', ' ', 'i', 't', ' ', 'D', 'A', 'R', 'Y', ' '};
-	switch(state) {
-		case display:
-			state = display;
-			break;
-		default: 
-			state = display;
-			break;
-	}
-	switch(state) {
-		case display:
-			if (pos < 24) {
-				for(cnt = 1; cnt <= 16; cnt++) {
-					LCD_Cursor(cnt);
-					LCD_WriteData(msg[pos+cnt]);
-				}
-				pos++;
-			}
-			else {
-				pos = 0;
-			}
-			break;
-	}
-	return state;
-}
-
 int main(void) {
     DDRA = 0x00; PORTA = 0xFF;
     DDRB = 0xFF; PORTB = 0x00; // PORTB set to output
@@ -122,22 +165,42 @@ int main(void) {
 
     LCD_init();
     
-    static task task1;
-    task *tasks[] = { &task1 };
+    static task task1, task2, task3, task4, task5;
+    task *tasks[] = { &task1, &task2, &task3, &task4, &task5 };
     const unsigned short numTasks = sizeof(tasks)/sizeof(task*);
 
-    //Task 1 (lcdSM)
-    task1.state = display; //initial state
-    task1.period = 300; //period
+    //Task 1 (pauseButtonToggleSM)
+    task1.state = pauseButton_wait; //initial state
+    task1.period = 50; //period
     task1.elapsedTime = task1.period; //current elapsed time
-    task1.TickFct = &lcdSMTick; //function pointer for tick
+    task1.TickFct = &pauseButtonSMTick; //function pointer for tick
+    //Task2 (toggleLED0SM)
+    task2.state = toggleLED0_wait;
+    task2.period = 500;
+    task2.elapsedTime = task2.period;
+    task2.TickFct = &toggleLED0SMTick;
+    //Task3 (toggleLED1SM)
+    task3.state = toggleLED1_wait;
+    task3.period = 1000;
+    task3.elapsedTime = task3.period;
+    task3.TickFct = &toggleLED1SMTick;
+    //Task4 (displaySM)
+    task4.state = display_display;
+    task4.period = 10;
+    task4.elapsedTime = task4.period;
+    task4.TickFct = &displaySMTick;
+    //Task5 (keypadSM)
+    task5.state = keypad;
+    task5.period = 50;
+    task5.elapsedTime = task5.period;
+    task5.TickFct = &keypadSMTick;
 
     unsigned long GCD = tasks[0]->period;
     for(i = 1; i < numTasks; i++) {
         GCD = findGCD(GCD,tasks[i]->period);
     }
 
-    TimerSet(300);
+    TimerSet(GCD);
     TimerOn();
 
     while (1) {
@@ -151,5 +214,5 @@ int main(void) {
 	    while(!TimerFlag);
 	    TimerFlag = 0;
     }
-    return 0;
+    return 1;
 }
