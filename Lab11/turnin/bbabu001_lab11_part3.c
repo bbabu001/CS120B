@@ -45,7 +45,6 @@ typedef struct task{
 unsigned char i;
 unsigned char x = 0;
 unsigned char keyout = 0;
-unsigned char cnt = 0;
 // end shared variables
 
 enum keypad_states {keypad};
@@ -87,8 +86,7 @@ int keypadSMTick(int state) {
 
 enum lcd_states {display, press};
 int lcdSMTick(int state) {
-	static char temp = 0;
-	static char msg[16] = {'C', 'o', 'n', 'g', 'r', 'a', 't', 'u', 'l', 'a', 't', 'i', 'o', 'n', 's', '!'};
+	static char temp;
 	switch(state) {
 		case display:
 			if (keyout == '\0') {
@@ -99,18 +97,7 @@ int lcdSMTick(int state) {
 			}
 			break;
 		case press:
-			if (keyout == '\0') {
-				state = display;
-				if (temp < 16) {
-                                	temp++;
-                        	}
-                        	else {
-                                	temp = 0;;
-                        	}
-			}
-			else {
-				state = press;
-			}
+			state = display;
 			break;
 		default: 
 			state = display;
@@ -118,14 +105,11 @@ int lcdSMTick(int state) {
 	}
 	switch(state) {
 		case display:
-			for(cnt = 1; cnt <= 16; cnt++) {
-				LCD_Cursor(cnt);
-				LCD_WriteData(msg[cnt-1]);
-			}
-			
+			LCD_Cursor(1);
+			LCD_WriteData(temp);
 			break;
 		case press:
-			msg[temp] = keyout;
+			temp = keyout;
 			break;
 	}
 	return state;
