@@ -12,11 +12,6 @@
 #include "simAVRHeader.h"
 #include <io.h>
 #include <keypad.h>
-//#include <lcd_8bit_task.h>
-//#include <queue.h>
-//#include <scheduler.h>
-//#include <seven_seg.h>
-//#include <stack.h>
 #include <timer.h>
 #endif
 
@@ -42,10 +37,16 @@ typedef struct task{
 // end task data structure
 
 // shared variables
-unsigned char i;
+unsigned char i = 0;
 unsigned char x = 0;
 unsigned char keyout = 0;
+unsigned char a = 0;
 unsigned char cnt = 0;
+unsigned char pos1 = 0;
+unsigned char pos2 = 0;
+unsigned char updown = 0;
+unsigned char pst = 0;
+unsigned char lose = 0;
 // end shared variables
 
 enum keypad_states {keypad};
@@ -85,47 +86,180 @@ int keypadSMTick(int state) {
 	return state;
 }
 
-enum lcd_states {display, press};
-int lcdSMTick(int state) {
-	static char temp = 0;
-	static char msg[16] = {'C', 'o', 'n', 'g', 'r', 'a', 't', 'u', 'l', 'a', 't', 'i', 'o', 'n', 's', '!'};
+enum start_states {init, start, pause};
+int startSMTick(int state) {
 	switch(state) {
-		case display:
-			if (keyout == '\0') {
-				state = display;
+		case init:
+			if (a == 0x01) {
+				state = start;
 			}
 			else {
-				state = press;
+				state = init;
 			}
 			break;
-		case press:
-			if (keyout == '\0') {
-				state = display;
-				if (temp < 16) {
-                                	temp++;
-                        	}
-                        	else {
-                                	temp = 0;;
-                        	}
+		case start:
+			if (a == 0x01 || lose == 1) {
+				state = pause;
 			}
 			else {
-				state = press;
+				state = start;
 			}
 			break;
-		default: 
-			state = display;
+		case pause:
+			if (a == 0x01) {
+				state = start;
+			}
+			else {
+				state = pause;
+			}
+			break;
+		default:
+			state = init;
 			break;
 	}
 	switch(state) {
-		case display:
-			for(cnt = 1; cnt <= 16; cnt++) {
-				LCD_Cursor(cnt);
-				LCD_WriteData(msg[cnt-1]);
+		case init:
+			pst = 0;
+			break;
+		case start:
+			pst = 1;
+			break;
+		case pause:
+			pst = 0;
+			break;
+	}
+	return state;
+}
+
+enum move_states {up, down};
+int moveSMTick(int state) {
+	switch(state) {
+		case up:
+			if (a == 0x04) {
+				state = down;
+			}
+			else {
+				state = up;
+			}
+			break;
+		case down:
+			if (a == 0x02) {
+				state = up;
+			}
+			else {
+				state = down;
+			}
+			break;
+		default:
+			state = up;
+			break;
+	}
+	switch(state) {
+		case up:
+			updown = 1;
+			break;
+		case down:
+			updown = 2;
+			break;
+	}
+}
+
+enum game_states {stop, go, p, lost};
+int gameSMTick(int state) {
+	static char obs[16] = {' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
+	static char obs2[16] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ', ' ', ' ', ' '};
+	static char dead[8] = {'Y', 'O', 'U', ' ', 'L', 'O', 'S', 'E'};
+	switch(state) {
+		case stop:
+			if (pst == 1) {
+				state = go;
+			}
+			else {
+				state = stop;
+			}
+			break;
+		case go:
+			if (pst == 0) {
+				state = p;
+			}
+			else if ((pos1 == 6 && updown == 1) || (pos2 == 10 && updown == 2)) {
+				state = lost;
+				LCD_ClearScreen();
+				lose = 1;
+			}
+			else {
+				state = go;
+			}
+			break;
+		case p:
+			if (pst == 1) {
+				state = go;
+			}
+			else {
+				state = p;
+			}
+			break;
+		case lost:
+			if (pst == 1) {
+				state = go;
+				LCD_ClearScreen();
+				lose = 0;
+			}
+			else {
+				lose = 1;
+				state = lost;
+			}
+			break;
+		default:
+			state = stop;
+			break;
+	}
+	switch(state) {
+		case stop:
+			for(cnt = 0; cnt < 16; cnt++) {
+				LCD_Cursor(cnt+1);
+				LCD_WriteData(obs[cnt]);
+				LCD_Cursor(cnt+17);
+				LCD_WriteData(obs2[cnt]);
+			}
+			LCD_Cursor(1);
+			break;
+		case go:
+			if (pos1 < 16) {
+				for(cnt = 1; cnt <= 16; cnt++) {
+					LCD_Cursor(cnt);
+					LCD_WriteData(obs[(pos1+cnt)%16]);
+					LCD_Cursor(cnt+16);
+					LCD_WriteData(obs2[(pos2+cnt)%16]);
+				}
+				if (updown == 1) {
+					LCD_Cursor(1);
+				}
+				else if (updown == 2) {
+					LCD_Cursor(17);
+				}
+				pos1++;
+				pos2++;
+			}
+			else {
+				pos1 = 0;
+				pos2 = 0;
 			}
 			
 			break;
-		case press:
-			msg[temp] = keyout;
+		case p:
+			for (cnt = 1; cnt <= 16; cnt++) {
+				LCD_Cursor(cnt);
+				LCD_WriteData(obs[(pos1+cnt)%16]);
+				LCD_Cursor(cnt+16);
+				LCD_WriteData(obs2[(pos2+cnt)%16]);
+			}
+			break;
+		case lost:
+			for (cnt = 1; cnt <= 8; cnt++) {
+				LCD_Cursor(cnt);
+				LCD_WriteData(dead[cnt-1]);
+			}
 			break;
 	}
 	return state;
@@ -139,21 +273,27 @@ int main(void) {
 
     LCD_init();
     
-    static task task1, task2;
-    task *tasks[] = { &task1, &task2 };
+    static task task1, task2, task3;
+    task *tasks[] = { &task1, &task2, &task3 };
     const unsigned short numTasks = sizeof(tasks)/sizeof(task*);
 
-    //Task 1 (lcdSM)
-    task1.state = display; //initial state
-    task1.period = 250; //period
+    //Task 1 (startSM)
+    task1.state = 0; //initial state
+    task1.period = 10; //period
     task1.elapsedTime = task1.period; //current elapsed time
-    task1.TickFct = &lcdSMTick; //function pointer for tick
+    task1.TickFct = &startSMTick; //function pointer for tick
 
-    //Task 2 (keypadSM)
-    task2.state = keypad;
+    //Task 2 (moveSM)
+    task2.state = 0;
     task2.period = 10;
     task2.elapsedTime = task2.period;
-    task2.TickFct = &keypadSMTick;
+    task2.TickFct = &moveSMTick;
+
+    //Task 3 (gameSM)
+    task3.state = 0;
+    task3.period = 200;
+    task3.elapsedTime = task3.period;
+    task3.TickFct = &gameSMTick;
 
     unsigned long GCD = tasks[0]->period;
     for(i = 1; i < numTasks; i++) {
@@ -164,6 +304,7 @@ int main(void) {
     TimerOn();
 
     while (1) {
+	    a = ~PINA & 0x07;
 	    for (i = 0; i < numTasks; i++) { //scheduler code
 		    if (tasks[i]->elapsedTime == tasks[i]->period) { // task is ready to tick
 			    tasks[i]->state = tasks[i]->TickFct(tasks[i]->state); // set next state
