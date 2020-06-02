@@ -101,12 +101,13 @@ int lcdSMTick(int state) {
 		case press:
 			if (keyout == '\0') {
 				state = display;
-				if (temp < 16) {
-                                	temp++;
-                        	}
-                        	else {
-                                	temp = 0;;
-                        	}
+				temp++;
+				//if (temp < 16) {
+                                //	temp++;
+                        	//}
+                        	//else {
+                                //	temp = 0;;
+                        	//}
 			}
 			else {
 				state = press;
@@ -125,7 +126,7 @@ int lcdSMTick(int state) {
 			
 			break;
 		case press:
-			msg[temp] = keyout;
+			msg[temp%16] = keyout;
 			break;
 	}
 	return state;

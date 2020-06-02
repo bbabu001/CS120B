@@ -152,16 +152,20 @@ int moveSMTick(int state) {
 			break;
 		default:
 			state = up;
+			updown = 1;
 			break;
 	}
 	switch(state) {
 		case up:
 			updown = 1;
+			LCD_Cursor(1);
 			break;
 		case down:
 			updown = 2;
+			LCD_Cursor(17);
 			break;
 	}
+	return state;
 }
 
 enum game_states {stop, go, p, lost};
@@ -291,7 +295,7 @@ int main(void) {
 
     //Task 3 (gameSM)
     task3.state = 0;
-    task3.period = 200;
+    task3.period = 300;
     task3.elapsedTime = task3.period;
     task3.TickFct = &gameSMTick;
 

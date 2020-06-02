@@ -123,6 +123,44 @@ int displaySMTick(int state) {
 
 enum keypad_states {keypad};
 int keypadSMTick(int state) {
+        x = GetKeypadKey();
+        switch(state) {
+                case keypad:
+                        state = keypad;
+                        break;
+                default:
+                        state = keypad;
+                        break;
+        }
+        switch(state) {
+                case keypad:
+                        switch(x) {
+                                case '\0': keyout = '\0'; break;
+                                case '1': keyout = '1'; break;
+                                case '2': keyout = '2'; break;
+                                case '3': keyout = '3'; break;
+                                case '4': keyout = '4'; break;
+                                case '5': keyout = '5'; break;
+                                case '6': keyout = '6'; break;
+                                case '7': keyout = '7'; break;
+                                case '8': keyout = '8'; break;
+                                case '9': keyout = '9'; break;
+                                case 'A': keyout = 'A'; break;
+                                case 'B': keyout = 'B'; break;
+                                case 'C': keyout = 'C'; break;
+                                case 'D': keyout = 'D'; break;
+                                case '*': keyout = '*'; break;
+                                case '0': keyout = '0'; break;
+                                case '#': keyout = '#'; break;
+                                default: keyout = 0x1B; break;
+                        }
+        }
+        return state;
+}
+
+/*
+enum keypad_states {keypad};
+int keypadSMTick(int state) {
 	x = GetKeypadKey();
 	switch(state) {
 		case keypad:
@@ -157,6 +195,8 @@ int keypadSMTick(int state) {
 	}
 	return state;
 }
+*/
+
 int main(void) {
     DDRA = 0x00; PORTA = 0xFF;
     DDRB = 0xFF; PORTB = 0x00; // PORTB set to output

@@ -1,7 +1,7 @@
 /*	Author: brandon
  *  Partner(s) Name: 
- *	Lab Section: 027
- *	Assignment: Lab #11  Exercise #3
+ *	Lab Section:
+ *	Assignment: Lab #11  Exercise #1
  *	Exercise Description: [optional - include for your own benefit]
  *
  *	I acknowledge all content contained herein, excluding template or example
@@ -10,8 +10,13 @@
 #include <avr/io.h>
 #ifdef _SIMULATE_
 #include "simAVRHeader.h"
-#include <io.h>
+#include <io.c>
 #include <keypad.h>
+//#include <lcd_8bit_task.h>
+//#include <queue.h>
+//#include <scheduler.h>
+//#include <seven_seg.h>
+//#include <stack.h>
 #include <timer.h>
 #endif
 
@@ -37,18 +42,123 @@ typedef struct task{
 // end task data structure
 
 // shared variables
-unsigned char i = 0;
+unsigned char led0_output = 0x00;
+unsigned char led1_output = 0x00;
+unsigned char pause = 0;
+unsigned char i;
+
 unsigned char x = 0;
 unsigned char keyout = 0;
-unsigned char a = 0;
-unsigned char cnt = 0;
-unsigned char pos1 = 0;
-unsigned char pos2 = 0;
-unsigned char updown = 0;
-unsigned char pst = 0;
-unsigned char lose = 0;
 // end shared variables
 
+enum pasueButtonSM_States {pauseButton_wait, pauseButton_press, pauseButton_release};
+int pauseButtonSMTick(int state) {
+	unsigned char press = ~PINA & 0x01;
+	switch(state) {
+		case pauseButton_wait:
+			state = press == 0x01? pauseButton_press: pauseButton_wait; break;
+		case pauseButton_press:
+			state = pauseButton_release; break;
+		case pauseButton_release:
+			state = press == 0x00? pauseButton_wait: pauseButton_press; break;
+		default: state = pauseButton_wait; break;
+	}
+	switch(state) {
+		case pauseButton_wait: break;
+		case pauseButton_press: 
+			pause = (pause == 0) ? 1 : 0;
+			break;
+		case pauseButton_release: break;
+	}
+	return state;
+}
+
+enum toggleLED0_States {toggleLED0_wait, toggleLED0_blink};
+int toggleLED0SMTick(int state) {
+	switch(state) {
+		case toggleLED0_wait: state = !pause? toggleLED0_blink: toggleLED0_wait; break;
+		case toggleLED0_blink: state = pause? toggleLED0_wait: toggleLED0_blink; break;
+		default: state = toggleLED0_wait; break;
+	}
+	switch(state) {
+		case toggleLED0_wait: break;
+		case toggleLED0_blink: 
+			led0_output = (led0_output == 0x00) ? 0x01 : 0x00;
+			break;
+	}
+	return state;
+}
+
+enum toggleLED1_States {toggleLED1_wait, toggleLED1_blink};
+int toggleLED1SMTick(int state) {
+	switch(state) {
+		case toggleLED1_wait: state = !pause? toggleLED1_blink: toggleLED1_wait; break;
+		case toggleLED1_blink: state = pause? toggleLED1_wait: toggleLED1_blink; break;
+		default: state = toggleLED1_wait; break;
+	}
+	switch(state) {
+		case toggleLED1_wait: break;
+		case toggleLED1_blink: 
+			led1_output = (led1_output == 0x00) ? 0x01 : 0x00;
+			break;
+	}
+	return state;
+}
+
+enum display_States {display_display};
+int displaySMTick(int state) {
+	unsigned char output;
+	switch(state) {
+		case display_display: state = display_display; break;
+		default: state = display_display; break;
+	}
+	switch(state) {
+		case display_display: 
+			output = led0_output | led1_output << 1;
+			break;
+	}
+	PORTB = output;
+	return state;
+}
+
+enum keypad_states {keypad};
+int keypadSMTick(int state) {
+        x = GetKeypadKey();
+        switch(state) {
+                case keypad:
+                        state = keypad;
+                        break;
+                default:
+                        state = keypad;
+                        break;
+        }
+        switch(state) {
+                case keypad:
+                        switch(x) {
+                                case '\0': keyout = '\0'; break;
+                                case '1': keyout = '1'; break;
+                                case '2': keyout = '2'; break;
+                                case '3': keyout = '3'; break;
+                                case '4': keyout = '4'; break;
+                                case '5': keyout = '5'; break;
+                                case '6': keyout = '6'; break;
+                                case '7': keyout = '7'; break;
+                                case '8': keyout = '8'; break;
+                                case '9': keyout = '9'; break;
+                                case 'A': keyout = 'A'; break;
+                                case 'B': keyout = 'B'; break;
+                                case 'C': keyout = 'C'; break;
+                                case 'D': keyout = 'D'; break;
+                                case '*': keyout = '*'; break;
+                                case '0': keyout = '0'; break;
+                                case '#': keyout = '#'; break;
+                                default: keyout = 0x1B; break;
+                        }
+        }
+        return state;
+}
+
+/*
 enum keypad_states {keypad};
 int keypadSMTick(int state) {
 	x = GetKeypadKey();
@@ -63,207 +173,29 @@ int keypadSMTick(int state) {
 	switch(state) {
 		case keypad: 
 			switch(x) {
-	       			case '\0': keyout = '\0'; break; 
-      	      			case '1': keyout = '1'; break; 
-        		        case '2': keyout = '2'; break;
-                		case '3': keyout = '3'; break;
-	               		case '4': keyout = '4'; break;
-        	      		case '5': keyout = '5'; break;
-                		case '6': keyout = '6'; break;
-	                	case '7': keyout = '7'; break;
-        	        	case '8': keyout = '8'; break;
-                		case '9': keyout = '9'; break;
-	                	case 'A': keyout = 'A'; break;
-        	        	case 'B': keyout = 'B'; break;
-                		case 'C': keyout = 'C'; break;
-	                	case 'D': keyout = 'D'; break;
-        	        	case '*': keyout = '*'; break;
-	                	case '0': keyout = '0'; break;
-        	        	case '#': keyout = '#'; break;
+	       			case '\0': keyout = 0x1F; break; 
+      	      			case '1': keyout = 0x01; break; 
+        		        case '2': keyout = 0x02; break;
+                		case '3': keyout = 0x03; break;
+	               		case '4': keyout = 0x04; break;
+        	      		case '5': keyout = 0x05; break;
+                		case '6': keyout = 0x06; break;
+	                	case '7': keyout = 0x07; break;
+        	        	case '8': keyout = 0x08; break;
+                		case '9': keyout = 0x09; break;
+	                	case 'A': keyout = 0x0A; break;
+        	        	case 'B': keyout = 0x0B; break;
+                		case 'C': keyout = 0x0C; break;
+	                	case 'D': keyout = 0x0D; break;
+        	        	case '*': keyout = 0x0E; break;
+	                	case '0': keyout = 0x00; break;
+        	        	case '#': keyout = 0x0F; break;
                 		default: keyout = 0x1B; break; 
 			}
 	}
 	return state;
 }
-
-enum start_states {init, start, pause};
-int startSMTick(int state) {
-	switch(state) {
-		case init:
-			if (a == 0x01) {
-				state = start;
-			}
-			else {
-				state = init;
-			}
-			break;
-		case start:
-			if (a == 0x01 || lose == 1) {
-				state = pause;
-			}
-			else {
-				state = start;
-			}
-			break;
-		case pause:
-			if (a == 0x01) {
-				state = start;
-			}
-			else {
-				state = pause;
-			}
-			break;
-		default:
-			state = init;
-			break;
-	}
-	switch(state) {
-		case init:
-			pst = 0;
-			break;
-		case start:
-			pst = 1;
-			break;
-		case pause:
-			pst = 0;
-			break;
-	}
-	return state;
-}
-
-enum move_states {up, down};
-int moveSMTick(int state) {
-	switch(state) {
-		case up:
-			if (a == 0x04) {
-				state = down;
-			}
-			else {
-				state = up;
-			}
-			break;
-		case down:
-			if (a == 0x02) {
-				state = up;
-			}
-			else {
-				state = down;
-			}
-			break;
-		default:
-			state = up;
-			break;
-	}
-	switch(state) {
-		case up:
-			updown = 1;
-			break;
-		case down:
-			updown = 2;
-			break;
-	}
-}
-
-enum game_states {stop, go, p, lost};
-int gameSMTick(int state) {
-	static char obs[16] = {' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
-	static char obs2[16] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ', ' ', ' ', ' '};
-	static char dead[8] = {'Y', 'O', 'U', ' ', 'L', 'O', 'S', 'E'};
-	switch(state) {
-		case stop:
-			if (pst == 1) {
-				state = go;
-			}
-			else {
-				state = stop;
-			}
-			break;
-		case go:
-			if (pst == 0) {
-				state = p;
-			}
-			else if ((pos1 == 6 && updown == 1) || (pos2 == 10 && updown == 2)) {
-				state = lost;
-				LCD_ClearScreen();
-				lose = 1;
-			}
-			else {
-				state = go;
-			}
-			break;
-		case p:
-			if (pst == 1) {
-				state = go;
-			}
-			else {
-				state = p;
-			}
-			break;
-		case lost:
-			if (pst == 1) {
-				state = go;
-				LCD_ClearScreen();
-				lose = 0;
-			}
-			else {
-				lose = 1;
-				state = lost;
-			}
-			break;
-		default:
-			state = stop;
-			break;
-	}
-	switch(state) {
-		case stop:
-			for(cnt = 0; cnt < 16; cnt++) {
-				LCD_Cursor(cnt+1);
-				LCD_WriteData(obs[cnt]);
-				LCD_Cursor(cnt+17);
-				LCD_WriteData(obs2[cnt]);
-			}
-			LCD_Cursor(1);
-			break;
-		case go:
-			if (pos1 < 16) {
-				for(cnt = 1; cnt <= 16; cnt++) {
-					LCD_Cursor(cnt);
-					LCD_WriteData(obs[(pos1+cnt)%16]);
-					LCD_Cursor(cnt+16);
-					LCD_WriteData(obs2[(pos2+cnt)%16]);
-				}
-				if (updown == 1) {
-					LCD_Cursor(1);
-				}
-				else if (updown == 2) {
-					LCD_Cursor(17);
-				}
-				pos1++;
-				pos2++;
-			}
-			else {
-				pos1 = 0;
-				pos2 = 0;
-			}
-			
-			break;
-		case p:
-			for (cnt = 1; cnt <= 16; cnt++) {
-				LCD_Cursor(cnt);
-				LCD_WriteData(obs[(pos1+cnt)%16]);
-				LCD_Cursor(cnt+16);
-				LCD_WriteData(obs2[(pos2+cnt)%16]);
-			}
-			break;
-		case lost:
-			for (cnt = 1; cnt <= 8; cnt++) {
-				LCD_Cursor(cnt);
-				LCD_WriteData(dead[cnt-1]);
-			}
-			break;
-	}
-	return state;
-}
+*/
 
 int main(void) {
     DDRA = 0x00; PORTA = 0xFF;
@@ -273,27 +205,35 @@ int main(void) {
 
     LCD_init();
     
-    static task task1, task2, task3;
-    task *tasks[] = { &task1, &task2, &task3 };
+    static task task1, task2, task3, task4, task5;
+    task *tasks[] = { &task1, &task2, &task3, &task4, &task5 };
     const unsigned short numTasks = sizeof(tasks)/sizeof(task*);
 
-    //Task 1 (startSM)
-    task1.state = 0; //initial state
-    task1.period = 10; //period
+    //Task 1 (pauseButtonToggleSM)
+    task1.state = pauseButton_wait; //initial state
+    task1.period = 50; //period
     task1.elapsedTime = task1.period; //current elapsed time
-    task1.TickFct = &startSMTick; //function pointer for tick
-
-    //Task 2 (moveSM)
-    task2.state = 0;
-    task2.period = 10;
+    task1.TickFct = &pauseButtonSMTick; //function pointer for tick
+    //Task2 (toggleLED0SM)
+    task2.state = toggleLED0_wait;
+    task2.period = 500;
     task2.elapsedTime = task2.period;
-    task2.TickFct = &moveSMTick;
-
-    //Task 3 (gameSM)
-    task3.state = 0;
-    task3.period = 200;
+    task2.TickFct = &toggleLED0SMTick;
+    //Task3 (toggleLED1SM)
+    task3.state = toggleLED1_wait;
+    task3.period = 1000;
     task3.elapsedTime = task3.period;
-    task3.TickFct = &gameSMTick;
+    task3.TickFct = &toggleLED1SMTick;
+    //Task4 (displaySM)
+    task4.state = display_display;
+    task4.period = 10;
+    task4.elapsedTime = task4.period;
+    task4.TickFct = &displaySMTick;
+    //Task5 (keypadSM)
+    task5.state = keypad;
+    task5.period = 50;
+    task5.elapsedTime = task5.period;
+    task5.TickFct = &keypadSMTick;
 
     unsigned long GCD = tasks[0]->period;
     for(i = 1; i < numTasks; i++) {
@@ -304,7 +244,6 @@ int main(void) {
     TimerOn();
 
     while (1) {
-	    a = ~PINA & 0x07;
 	    for (i = 0; i < numTasks; i++) { //scheduler code
 		    if (tasks[i]->elapsedTime == tasks[i]->period) { // task is ready to tick
 			    tasks[i]->state = tasks[i]->TickFct(tasks[i]->state); // set next state
@@ -315,5 +254,5 @@ int main(void) {
 	    while(!TimerFlag);
 	    TimerFlag = 0;
     }
-    return 0;
+    return 1;
 }

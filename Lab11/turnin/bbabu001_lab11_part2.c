@@ -99,10 +99,10 @@ int lcdSMTick(int state) {
 	}
 	switch(state) {
 		case display:
-			if (pos < 24) {
+			if (pos < 40) {
 				for(cnt = 1; cnt <= 16; cnt++) {
 					LCD_Cursor(cnt);
-					LCD_WriteData(msg[pos+cnt]);
+					LCD_WriteData(msg[(pos+cnt)%40]);
 				}
 				pos++;
 			}
